@@ -10,10 +10,14 @@ import json
 import sys
 import psutil
 import os
+from googletrans import Translator
 
-# setup for prefix and Yeelight bulb
+
+# setup for prefix and general stuff
 client = commands.Bot(command_prefix = '.')
-bulb = Bulb('192.168.178.11')
+bulbIP = '192.168.178.11'
+bulb = Bulb(bulbIP)
+trans = Translator()
 
 # word split function for regional command
 def split(word): 
@@ -186,7 +190,47 @@ async def version(ctx):
     version = sys.version
     await ctx.send('Bot is running on python ' + version) 
 
+@client.command()
+@commands.check(am_i_owner)
+async def light(ctx, state):
+    if state == "on":
+        bulb.turn_on()
+    elif state == "off":
+        bulb.turn_off()
+    elif state == "red":
+        bulb.set_rgb(255, 0, 0)
+    elif state == "green":
+        bulb.set_rgb(0, 255, 0)
+    elif state == "blue":
+        bulb.set_rgb(0, 0, 255)
+    await ctx.send(f'Turning the light {state}.')   
+
+@client.command()
+async def lstat(ctx):
+    properties = bulb.get_properties()
+    power = properties["power"]
+    color = properties["rgb"]
+    brightness = properties["current_brightness"] + "%"
+    mode = properties['color_mode']
+    colorhex = hex(int(color))
+    colorhex = colorhex.replace("0x", "#")
+
+    lembed = discord.Embed(title="Light status")
+    lembed.add_field(name="Power", value=power)
+    lembed.add_field(name="Color", value=colorhex)
+    lembed.add_field(name="Brightness", value=brightness)
+    lembed.add_field(name="Color mode", value=mode)
+    lembed.set_footer(text=bulbIP)
+    await ctx.send(embed=lembed)
+
+# translator
+@client.command()
+async def translate(ctx, *, word):
+   newword = trans.translate(word)
+   transword = newword['text'] 
+   await ctx.send(newword)
+
 # bot login (put token in token.txt)
 tokenfile = open("token.txt")
 token = tokenfile.read()
-client.run(token)
+client.run("")
