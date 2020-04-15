@@ -10,11 +10,13 @@ import json
 import sys
 import psutil
 import os
+import googletrans
 from googletrans import Translator
+from googletrans import LANGUAGES
 
 
 # setup for prefix and general stuff
-client = commands.Bot(command_prefix = '.')
+client = commands.Bot(command_prefix = '>')
 bulbIP = '192.168.178.11'
 bulb = Bulb(bulbIP)
 trans = Translator()
@@ -103,27 +105,39 @@ async def cf(ctx):
 # dice roll
 @client.command()
 async def dice(ctx, limit=6):
-    count = random.randint(1, limit)
     if limit < 6:
         await ctx.send("Minimum amount is 6!")
-    else: 
-        await ctx.send("You rolled " + str(count) + "!")
+    else:
+        count = random.randint(1, limit)
+        diceembed = discord.Embed(title="Dice roll", color=0x6495ed)
+        diceembed.add_field(name="Range:", value=f'6 - {limit}')
+        diceembed.add_field(name="You rolled:", value=count)
+        await ctx.send(embed=diceembed)
+
+    
 
 # python calculator / python math
 @client.command()
 async def calc(ctx, n1, operator, n2=0):
     if str(operator) == '+':
-        await ctx.send(int(n1) + int(n2))
+        answer = int(n1) + int(n2)
     elif str(operator) == '-':
-        await ctx.send(int(n1) - int(n2))
+        answer = int(n1) - int(n2)
     elif str(operator) == '*' or str(operator).upper() == 'X':
-        await ctx.send(int(n1) * int(n2))
+        answer = int(n1) * int(n2)
     elif str(operator) == '/':
-        await ctx.send(int(n1) / int(n2))
+        answer = int(n1) / int(n2)
     elif str(operator) == "pow":
-        await ctx.send(pow(int(n1), int(n2)))
+        answer = pow(int(n1), int(n2))
     elif str(operator) == "sqrt":
-        await ctx.send(math.sqrt(int(n1)))
+        answer = math.sqrt(int(n1))
+    calculation = str(n1) + " " + operator + " " + str(n2)
+    if "sqrt 0" in calculation:
+      calculation = calculation.replace("sqrt 0", "sqrt")
+    calculatorembed = discord.Embed(title="Calculator", color=0x6495ed)
+    calculatorembed.add_field(name="Calculation:", value=calculation)
+    calculatorembed.add_field(name="Answer:", value=answer)
+    await ctx.send(embed=calculatorembed)
 
 # word to regional text [uses split function]
 @client.command()
@@ -190,47 +204,67 @@ async def version(ctx):
     version = sys.version
     await ctx.send('Bot is running on python ' + version) 
 
+# yeelight control
 @client.command()
 @commands.check(am_i_owner)
-async def light(ctx, state):
+async def light(ctx, state, red=0, green=0, blue=0):
     if state == "on":
         bulb.turn_on()
+        await ctx.send(f'Turning the light {state}.')
     elif state == "off":
         bulb.turn_off()
+        await ctx.send(f'Turning the light {state}.')
     elif state == "red":
         bulb.set_rgb(255, 0, 0)
+        await ctx.send(f'Turning the light {state}.')
     elif state == "green":
         bulb.set_rgb(0, 255, 0)
+        await ctx.send(f'Turning the light {state}.')
     elif state == "blue":
         bulb.set_rgb(0, 0, 255)
-    await ctx.send(f'Turning the light {state}.')   
-
-@client.command()
-async def lstat(ctx):
-    properties = bulb.get_properties()
-    power = properties["power"]
-    color = properties["rgb"]
-    brightness = properties["current_brightness"] + "%"
-    mode = properties['color_mode']
-    colorhex = hex(int(color))
-    colorhex = colorhex.replace("0x", "#")
-
-    lembed = discord.Embed(title="Light status")
-    lembed.add_field(name="Power", value=power)
-    lembed.add_field(name="Color", value=colorhex)
-    lembed.add_field(name="Brightness", value=brightness)
-    lembed.add_field(name="Color mode", value=mode)
-    lembed.set_footer(text=bulbIP)
-    await ctx.send(embed=lembed)
+        await ctx.send(f'Turning the light {state}.')
+    elif state == "stats":
+        properties = bulb.get_properties()
+        power = properties["power"]
+        color = properties["rgb"]
+        brightness = properties["current_brightness"] + "%"
+        mode = properties['color_mode']
+        colorhex = hex(int(color))
+        colorhex = colorhex.replace("0x", "#")
+        lightembed = discord.Embed(title="Light status", color=0x6495ed)
+        lightembed.add_field(name="Power:", value=power)
+        lightembed.add_field(name="Color:", value=colorhex)
+        lightembed.add_field(name="Brightness:", value=brightness)
+        lightembed.add_field(name="Color mode:", value=mode)
+        lightembed.set_footer(text=bulbIP)
+        await ctx.send(embed=lightembed)
+    elif state == "rgb":
+        if red > 255 or green > 255 or blue > 255:
+            await ctx.send("Please use values between 0 - 255.")
+        else: 
+            bulb.set_rgb(red, green, blue)
+            await ctx.send(f'Set RGB value to: {red}, {green}, {blue}')
+    else:
+        await ctx.send(f'{state} is not a valid state!')
 
 # translator
 @client.command()
 async def translate(ctx, *, word):
-   newword = trans.translate(word)
-   transword = newword['text'] 
-   await ctx.send(newword)
+    langcodes = googletrans.LANGUAGES
+    translatedtstring = trans.translate(word)
+    translatedword = translatedtstring.text
+    originword = translatedtstring.origin
+    srclangcode = translatedtstring.src
+    destlangcode = translatedtstring.dest
+    srclang = langcodes[srclangcode]
+    destlang = langcodes[destlangcode]
+    translateembed = discord.Embed(title="Translate", color=0x6495ed)
+    translateembed.add_field(name='From: ' + srclang, value=originword)
+    translateembed.add_field(name="To: " + destlang, value=translatedword)
+    await ctx.send(embed=translateembed)
+
 
 # bot login (put token in token.txt)
 tokenfile = open("token.txt")
 token = tokenfile.read()
-client.run("")
+client.run(token)
