@@ -14,12 +14,23 @@ import googletrans
 from googletrans import Translator
 from googletrans import LANGUAGES
 from twilio.rest import Client
+import dotenv
+from dotenv import load_dotenv
+from musixmatch import Musixmatch
 
-client = Client()
+
 # setup for prefix and general stuff
 client = commands.Bot(command_prefix = '>')
-bulbIP = '192.168.178.11'
+
+bulbIP = open("./tokenstuff/bulbIP.txt").read()
 bulb = Bulb(bulbIP)
+
+accsid = open('./tokenstuff/twilio.txt').read(1)
+authtoken = open('./tokenstuff/twilio.txt').read(2)
+twilliapp = Client(accsid, authtoken)
+
+mmtoken = open('./tokenstuff/musixmatch.txt').read()
+musixmatch = Musixmatch()
 trans = Translator()
 
 # word split function for regional command
@@ -266,11 +277,16 @@ async def translate(ctx, *, word):
 
 @client.command()
 @commands.check(am_i_owner)
-async def whatsapp(ctx, number, message):
+async def whatsapp(ctx, message):
     from_whatsapp_number='whatsapp:+14155238886'
-    to_whatsapp_number='whatsapp:+310621713391'
-    client.messages.create(body='dieke dennis', from_=from_whatsapp_number, to=to_whatsapp_number)
+    to_whatsapp_number='whatsapp:+31621713391'
+    twillapp.messages.create(body=message, from_=from_whatsapp_number, to=to_whatsapp_number)
 
+@client.command()
+async def lyrics(ctx, q_track, q_artist):
+
+    lyrics = musixmatch.matcher_lyrics_get(q_track, q_artist)
+    await ctx.send(lyrics)
 
 # bot login (put token in token.txt)
 tokenfile = open("./tokenstuff/pybot.txt")
