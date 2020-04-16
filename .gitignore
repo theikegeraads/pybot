@@ -1,3 +1,4 @@
 ./tokenstuff
 tokenstuff/pybot.txt
 tokenstuff/heujdieke.txt
+*.env

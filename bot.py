@@ -13,8 +13,9 @@ import os
 import googletrans
 from googletrans import Translator
 from googletrans import LANGUAGES
+from twilio.rest import Client
 
-
+client = Client()
 # setup for prefix and general stuff
 client = commands.Bot(command_prefix = '>')
 bulbIP = '192.168.178.11'
@@ -263,8 +264,15 @@ async def translate(ctx, *, word):
     translateembed.add_field(name="To: " + destlang, value=translatedword)
     await ctx.send(embed=translateembed)
 
+@client.command()
+@commands.check(am_i_owner)
+async def whatsapp(ctx, number, message):
+    from_whatsapp_number='whatsapp:+14155238886'
+    to_whatsapp_number='whatsapp:+310621713391'
+    client.messages.create(body='dieke dennis', from_=from_whatsapp_number, to=to_whatsapp_number)
+
 
 # bot login (put token in token.txt)
-tokenfile = open("token.txt")
+tokenfile = open("./tokenstuff/pybot.txt")
 token = tokenfile.read()
 client.run(token)
